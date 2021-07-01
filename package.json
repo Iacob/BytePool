@@ -1,0 +1,25 @@
+{
+  "name": "bytepool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "agent": "node agent.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Iacob/BytePool.git"
+  },
+  "author": "",
+  "license": "LGPL-2.1",
+  "bugs": {
+    "url": "https://github.com/Iacob/BytePool/issues"
+  },
+  "homepage": "https://github.com/Iacob/BytePool#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "uuid": "^8.3.2"
+  }
+}
