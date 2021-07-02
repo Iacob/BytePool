@@ -8,81 +8,57 @@ const app = express();
 app.use(express.json());
 
 const dataStore = [];
-const connIdMap = new Object();
-const connIdReverseMap = new Object();
 const connMap = new Object();
 
-function generateConnID() {
+function generateConnId() {
   return uuid.v4();
 }
 
-function storeReceivedData(c, receivedData) {
-  var socketId = getSocketId(c);
-  var connId = connIdMap[socketId];
-  if (connId == null) {
-    connId = generateConnID();
-    connIdMap[socketId] = connId;
-    connIdReverseMap[connId] = socketId;
-    connMap[socketId] = c;
-  }
+function storeReceivedData(connId, receivedData) {
   dataStore.push({connId: connId, data: receivedData, type: 'receive'});
+  console.log(">>>>>>>>>>>>>>>>");
+  console.log(dataStore);
+  console.log("<<<<<<<<<<<<<<<<");
 }
 
-function storeCloseAction(c) {
-  var socketId = getSocketId(c);
-  var connId = connIdMap[socketId];
-  if (connId == null) {
-    connId = generateConnID();
-    connIdMap[socketId] = connId;
-  }
+function storeCloseAction(connId) {
   dataStore.push({connId: connId, type: 'close'});
+  console.log(">>>>>>>>>>>>>>>>");
+  console.log(dataStore);
+  console.log("<<<<<<<<<<<<<<<<");
 }
 
 function getSocketId(c) {
   return c.remoteAddress + "-" + c.remotePort;
 }
 
-function closeConnBySocketId(socketId) {
-  var connId = connIdMap[socketId];
-  var socket = connMap[connId];
-  if (socket != null) {
-    socket.end();
-  }
-
-  delete connIdMap[socketId];
-  delete connIdReverseMap[connId];
-  delete connMap[socketId];
-}
-
 function closeConnByConnId(connId) {
-  var socketId = connIdReverseMap[connId];
   var socket = connMap[connId];
   if (socket != null) {
     socket.end();
   }
-
-  delete connIdMap[socketId];
-  delete connIdReverseMap[connId];
+  
   delete connMap[socketId];
 }
 
 net.createServer((c) => {
   console.log('client connnected.');
+  
+  let connId = generateConnId();
+  connMap[connId] = c;
+  
   c.on('end', () => {
-    storeCloseAction(getSocketId(c));
+    storeCloseAction(connId);
     console.log('client disconnected.');
   });
   c.on('data', (data) => {
-    storeReceivedData(c, Array.from(data));
-    console.log(dataStore);
-    console.log(c.remoteAddress + "-" + c.remotePort);
+    storeReceivedData(connId, Array.from(data));
   });
   c.on('close', (err) => {
     console.log('client closed.');
   });
   c.on('error', (err) => {
-    let socketId = getSocketId(c);
-    closeConnBySocketId(socketId);
+    closeConnByConnId(connId);
     console.log('client error.');
   });
 }).listen(3001, '0.0.0.0', 10, () => {
@@ -107,9 +83,7 @@ app.post('/send', (req, res) => {
   var data = req?.body?.data;
   var connId = req?.body?.connId;
   if ((connId != null) && (Array.isArray(data))) {
-    var dataBuffer = Buffer.from(data);
-    var socketId = connIdReverseMap[connId];
-    var socket = connMap[socketId];
+    var socket = connMap[connId];
     if (socket != null) {
       socket.write(data);
     }
