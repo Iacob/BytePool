@@ -38,7 +38,7 @@ function closeConnByConnId(connId) {
     socket.end();
   }
   
-  delete connMap[socketId];
+  delete connMap[connId];
 }
 
 net.createServer((c) => {
