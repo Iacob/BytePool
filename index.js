@@ -35,7 +35,7 @@ function getSocketId(c) {
 function closeConnByConnId(connId) {
   var socket = connMap[connId];
   if (socket != null) {
-    socket.end();
+    socket.destroy();
   }
   
   delete connMap[connId];
@@ -85,7 +85,7 @@ app.post('/send', (req, res) => {
   if ((connId != null) && (Array.isArray(data))) {
     var socket = connMap[connId];
     if (socket != null) {
-      socket.write(data);
+      socket.write(Buffer.from(data));
     }
   }
   

@@ -11,12 +11,12 @@ function sendDataToRemote(connId, data) {
       'http://localhost:3000/send',
       {method: 'POST'},
       (res) => {
-	res.on('data', (data) => {
+	res.on('data', (dataResp) => {
 	});
 	res.on('close', () => {
 	});
       });
-    
+    req.setHeader('Content-Type', 'application/json');
     req.write(JSON.stringify({connId: connId, data: data}), 'utf-8');
     req.end();
   }
@@ -24,7 +24,7 @@ function sendDataToRemote(connId, data) {
 
 function sendCloseToRemote(connId) {
   
-  if ((connId != null) && (Array.isArray(data))) {
+  if (connId != null) {
     var req = http.request(
       'http://localhost:3000/close',
       {method: 'POST'},
@@ -34,7 +34,8 @@ function sendCloseToRemote(connId) {
 	res.on('close', () => {
 	});
       });
-    
+
+    req.setHeader('Content-Type', 'application/json');
     req.write(JSON.stringify({connId: connId}), 'utf-8');
     req.end();
   }
@@ -46,7 +47,8 @@ function startNewConn(connId) {
   });
 
   socket.on('data', (data) => {
-    sendToRemote(connId1, data);
+    let dataArr = Array.from(data);
+    sendDataToRemote(connId1, dataArr);
   });
   socket.on('end', () => {
     sendCloseToRemote(connId);
@@ -57,15 +59,25 @@ function startNewConn(connId) {
 }
 
 function doAct(act) {
-  if (act.type == 'receive') {
-    var socket = connMap[act.connId];
+  if (act == null) {
+    return;
+  }
+  if (act.data != null) {
+    console.log(act);
+  }
+  // act: { connId, data, type }
+  if (act?.data?.type == 'receive') {
+    var socket = connMap[act.data.connId];
     if (socket == null) {
-      socket = startNewConn(act.connId);
+      socket = startNewConn(act.data.connId);
     }
-    socket.write(Buffer.from(act.data));
-  }else if (act.type == 'close') {
-    socket.end();
-    delete connMap[act.connId];
+    socket.write(Buffer.from(act.data.data));
+  }else if (act?.data?.type == 'close') {
+    var socket = connMap[act.data.connId];
+    if (socket != null) {
+      socket.end();
+      delete connMap[act.data.connId];
+    }
   }
 }
 
@@ -80,7 +92,9 @@ function readFromRemote() {
 	data1 += data;
       });
       res.on('close', () => {
-	console.log(data1);
+	let act1 = JSON.parse(data1);
+	//console.log(data1);
+	doAct(act1);
 	readFromRemote();
       });
     });
